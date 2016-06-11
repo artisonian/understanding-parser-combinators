@@ -3,8 +3,8 @@ module Parser exposing (..)
 import String
 
 
-pchar : (Char, String) -> Result String (Char, String)
-pchar (charToMatch, str) =
+pchar : Char -> String -> Result String (Char, String)
+pchar charToMatch str =
   case String.uncons str of
     Nothing ->
       Err "No more input"
