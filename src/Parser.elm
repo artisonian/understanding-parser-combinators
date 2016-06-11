@@ -3,17 +3,27 @@ module Parser exposing (..)
 import String
 
 
-pchar : Char -> String -> Result String (Char, String)
-pchar charToMatch str =
-  case String.uncons str of
-    Nothing ->
-      Err "No more input"
+type Parser a =
+  Parser (String -> Result String a)
 
-    Just (found, rest) ->
-      if found == charToMatch then
-        Ok (charToMatch, rest)
 
-      else
-        Err <|
-          "Expecting '" ++ String.fromChar charToMatch
-          ++ "'. Got '" ++ String.fromChar found ++ "'"
+parse : Parser a -> String -> Result String a
+parse (Parser doParse) input =
+  doParse input
+
+
+pchar : Char -> Parser (Char, String)
+pchar charToMatch =
+  Parser <| \str ->
+    case String.uncons str of
+      Nothing ->
+        Err "No more input"
+
+      Just (found, rest) ->
+        if found == charToMatch then
+          Ok (charToMatch, rest)
+
+        else
+          Err <|
+            "Expecting '" ++ String.fromChar charToMatch
+            ++ "'. Got '" ++ String.fromChar found ++ "'"
