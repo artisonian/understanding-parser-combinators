@@ -3,18 +3,17 @@ module Parser exposing (..)
 import String
 
 
-pchar : (Char, String) -> (String, String)
+pchar : (Char, String) -> Result String (Char, String)
 pchar (charToMatch, str) =
   case String.uncons str of
     Nothing ->
-      ("No more input", "")
+      Err "No more input"
 
     Just (found, rest) ->
       if found == charToMatch then
-        ("Found " ++ String.fromChar charToMatch, rest)
+        Ok (charToMatch, rest)
 
       else
-        ( "Expecting '" ++ String.fromChar charToMatch
+        Err <|
+          "Expecting '" ++ String.fromChar charToMatch
           ++ "'. Got '" ++ String.fromChar found ++ "'"
-        , str
-        )
