@@ -1,4 +1,11 @@
-module Parser exposing (..)
+module Parser exposing
+  ( Parser
+  , parse
+  , andThen
+  , orElse
+  , choice
+  , pchar
+  )
 
 import Result
 import String
@@ -31,11 +38,32 @@ orElse : Parser a -> Parser a -> Parser a
 orElse (Parser tryFirst) (Parser tryNext) =
   Parser <| \str ->
     case tryFirst str of
-      Ok (result, rest) ->
-        Ok (result, rest)
+      Ok result ->
+        Ok result
 
       Err _ ->
         tryNext str
+
+
+choice : List (Parser a) -> Parser a
+choice parsers =
+  Parser (oneOf parsers)
+
+
+oneOf : List (Parser a) -> String -> Result String (a, String)
+oneOf parsers str =
+  case parsers of
+    [] ->
+      Err "All parsers failed"
+
+    Parser tryFirst :: others ->
+      case tryFirst str of
+        Err _ ->
+          oneOf others str
+
+        Ok result ->
+          Ok result
+
 
 
 pchar : Char -> Parser Char
