@@ -27,6 +27,17 @@ andThen (Parser doFirst) (Parser doRest) =
         Ok ((result, result'), rest')
 
 
+orElse : Parser a -> Parser a -> Parser a
+orElse (Parser tryFirst) (Parser tryNext) =
+  Parser <| \str ->
+    case tryFirst str of
+      Ok (result, rest) ->
+        Ok (result, rest)
+
+      Err _ ->
+        tryNext str
+
+
 pchar : Char -> Parser Char
 pchar charToMatch =
   Parser <| \str ->
