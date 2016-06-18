@@ -5,6 +5,7 @@ module Parser exposing
   , map, return, apply, lift2, seq
   , many, many1, opt
   , discardLeft, discardRight, between
+  , sepBy, sepBy1
   , pchar, pstring, pint
   )
 
@@ -176,6 +177,21 @@ discardRight left right =
 between : Parser a -> Parser b -> Parser c -> Parser b
 between p1 p2 p3 =
   p1 `discardLeft` p2 `discardRight` p3
+
+
+sepBy1 : Parser a -> Parser b -> Parser (List a)
+sepBy1 parser sep =
+  let
+    sepThenP = sep `discardLeft` parser
+
+  in
+    map (\(p, list) -> p :: list) <|
+      parser `andThen` many sepThenP
+
+
+sepBy : Parser a -> Parser b -> Parser (List a)
+sepBy parser sep =
+  sepBy1 parser sep `orElse` return []
 
 
 pchar : Char -> Parser Char
