@@ -1,10 +1,8 @@
 module Parser exposing
   ( Parser
   , parse
-  , andThen
-  , orElse
-  , choice
-  , anyOf
+  , andThen, orElse, choice, anyOf
+  , map
   , pchar
   )
 
@@ -71,6 +69,17 @@ anyOf parser inputs =
   inputs
     |> List.map parser
     |> choice
+
+
+map : (a -> b) -> Parser a -> Parser b
+map f parser =
+  Parser <| \input ->
+    case (parse parser input) of
+      Ok (result, rest) ->
+        Ok (f result, rest)
+
+      Err msg ->
+        Err msg
 
 
 pchar : Char -> Parser Char
