@@ -3,7 +3,7 @@ module Parser exposing
   , parse
   , andThen, orElse, choice, anyOf
   , map, return, apply, lift2, seq
-  , many, many1
+  , many, many1, opt
   , pchar, pstring, pint
   )
 
@@ -147,6 +147,19 @@ many1 parser =
       Ok (result :: result', rest')
 
 
+opt : Parser a -> Parser (Maybe a)
+opt parser =
+  let
+    some =
+      map Just parser
+
+    none =
+      return Nothing
+
+  in
+    some `orElse` none
+
+
 pchar : Char -> Parser Char
 pchar charToMatch =
   Parser <| \str ->
@@ -176,8 +189,17 @@ pstring str =
 pint : Parser Int
 pint =
   let
-    toInt chars =
-      chars |> String.fromList |> String.toInt |> Result.withDefault 0
+    toInt (sign, chars) =
+      let
+        n = chars |> String.fromList |> String.toInt |> Result.withDefault 0
+
+      in
+        case sign of
+          Just _ ->
+            negate n
+
+          Nothing ->
+            n
 
     digit =
       anyOf pchar <| List.map Char.fromCode [48..57]
@@ -186,4 +208,5 @@ pint =
       many1 digit
 
   in
-    digits |> map toInt
+    opt (pchar '-') `andThen` digits
+      |> map toInt
