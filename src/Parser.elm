@@ -3,9 +3,12 @@ module Parser exposing
   , parse
   , andThen, orElse, choice, anyOf
   , map, return, apply, lift2, seq
-  , pchar, pstring
+  , many, many1
+  , pchar, pstring, pint
   )
 
+
+import Char
 import Result
 import String
 
@@ -111,6 +114,39 @@ seq list =
         consP x (seq xs)
 
 
+zeroOrMore : Parser a -> String -> (List a, String)
+zeroOrMore parser input =
+  case (parse parser input) of
+    Err _ ->
+      ([], input)
+
+    Ok (result, rest) ->
+      let
+        (result', rest') = zeroOrMore parser rest
+
+      in
+        (result :: result', rest')
+
+
+many : Parser a -> Parser (List a)
+many parser =
+  Parser <| \input ->
+    Ok <| zeroOrMore parser input
+
+
+many1 : Parser a -> Parser (List a)
+many1 parser =
+  Parser <| \input ->
+    parse parser input
+      `Result.andThen` \(result, rest) ->
+
+    let
+      (result', rest') = zeroOrMore parser rest
+
+    in
+      Ok (result :: result', rest')
+
+
 pchar : Char -> Parser Char
 pchar charToMatch =
   Parser <| \str ->
@@ -135,3 +171,19 @@ pstring str =
     |> List.map pchar
     |> seq
     |> map String.fromList
+
+
+pint : Parser Int
+pint =
+  let
+    toInt chars =
+      chars |> String.fromList |> String.toInt |> Result.withDefault 0
+
+    digit =
+      anyOf pchar <| List.map Char.fromCode [48..57]
+
+    digits =
+      many1 digit
+
+  in
+    digits |> map toInt
