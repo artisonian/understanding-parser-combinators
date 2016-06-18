@@ -4,6 +4,7 @@ module Parser exposing
   , andThen
   , orElse
   , choice
+  , anyOf
   , pchar
   )
 
@@ -64,6 +65,12 @@ oneOf parsers str =
         Ok result ->
           Ok result
 
+
+anyOf : (a -> Parser a) -> List a -> Parser a
+anyOf parser inputs =
+  inputs
+    |> List.map parser
+    |> choice
 
 
 pchar : Char -> Parser Char
