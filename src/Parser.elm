@@ -3,7 +3,8 @@ module Parser exposing
   , parse
   , andThen, orElse, choice, anyOf
   , map, return, apply, lift2, seq
-  , many, many1, opt, discardLeft, discardRight
+  , many, many1, opt
+  , discardLeft, discardRight, between
   , pchar, pstring, pint
   )
 
@@ -170,6 +171,11 @@ discardRight : Parser a -> Parser b -> Parser a
 discardRight left right =
   left `andThen` right
     |> map (\(a, b) -> a)
+
+
+between : Parser a -> Parser b -> Parser c -> Parser b
+between p1 p2 p3 =
+  p1 `discardLeft` p2 `discardRight` p3
 
 
 pchar : Char -> Parser Char
