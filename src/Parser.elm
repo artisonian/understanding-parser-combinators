@@ -3,7 +3,7 @@ module Parser exposing
   , parse
   , andThen, orElse, choice, anyOf
   , map, return, apply, lift2, seq
-  , many, many1, opt
+  , many, many1, opt, discardLeft, discardRight
   , pchar, pstring, pint
   )
 
@@ -158,6 +158,18 @@ opt parser =
 
   in
     some `orElse` none
+
+
+discardLeft : Parser a -> Parser b -> Parser b
+discardLeft left right =
+  left `andThen` right
+    |> map (\(a, b) -> b)
+
+
+discardRight : Parser a -> Parser b -> Parser a
+discardRight left right =
+  left `andThen` right
+    |> map (\(a, b) -> a)
 
 
 pchar : Char -> Parser Char
