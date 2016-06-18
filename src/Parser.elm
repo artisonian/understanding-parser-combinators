@@ -2,8 +2,8 @@ module Parser exposing
   ( Parser
   , parse
   , andThen, orElse, choice, anyOf
-  , map
-  , pchar
+  , map, return, apply, lift2, seq
+  , pchar, pstring
   )
 
 import Result
@@ -82,6 +82,35 @@ map f parser =
         Err msg
 
 
+return : a -> Parser a
+return thing =
+  Parser <| \input ->
+    Ok (thing, input)
+
+
+apply : (Parser (a -> b)) -> Parser a -> Parser b
+apply fP thingP =
+  fP `andThen` thingP |> map (\(f, x) -> f x)
+
+
+lift2 : (a -> b -> c) -> Parser a -> Parser b -> Parser c
+lift2 f xP yP =
+  return f `apply` xP `apply` yP
+
+
+seq : List (Parser a) -> Parser (List a)
+seq list =
+  let
+    consP = lift2 (::)
+
+  in
+    case list of
+      [] ->
+        return []
+      x :: xs ->
+        consP x (seq xs)
+
+
 pchar : Char -> Parser Char
 pchar charToMatch =
   Parser <| \str ->
@@ -97,3 +126,12 @@ pchar charToMatch =
           Err <|
             "Expecting '" ++ String.fromChar charToMatch
             ++ "'. Got '" ++ String.fromChar found ++ "'"
+
+
+pstring : String -> Parser String
+pstring str =
+  str
+    |> String.toList
+    |> List.map pchar
+    |> seq
+    |> map String.fromList
