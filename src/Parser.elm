@@ -2,7 +2,7 @@ module Parser exposing
   ( Parser
   , parse
   , andThen, orElse, choice, anyOf
-  , map, return, apply, lift2, seq
+  , bind, map, return, apply, lift2, seq
   , many, many1, opt
   , discardLeft, discardRight, between
   , sepBy, sepBy1
@@ -25,17 +25,14 @@ parse (Parser doParse) input =
 
 
 andThen : Parser a -> Parser b -> Parser (a, b)
-andThen (Parser doFirst) (Parser doRest) =
-  Parser <| \str ->
-    doFirst str
-      `Result.andThen` \(result, rest) ->
+andThen firstParser nextParser =
+  firstParser `bindP`
+    \result ->
 
-    case doRest rest of
-      Err msg ->
-        Err msg
+  nextParser `bindP`
+    \result' ->
 
-      Ok (result', rest') ->
-        Ok ((result, result'), rest')
+  return (result, result')
 
 
 orElse : Parser a -> Parser a -> Parser a
@@ -76,15 +73,22 @@ anyOf parser inputs =
     |> choice
 
 
-map : (a -> b) -> Parser a -> Parser b
-map f parser =
+bind : (a -> Parser b) -> Parser a -> Parser b
+bind f parser =
   Parser <| \input ->
-    case (parse parser input) of
-      Ok (result, rest) ->
-        Ok (f result, rest)
+    parse parser input
+      `Result.andThen` \(result, rest) ->
 
-      Err msg ->
-        Err msg
+    parse (f result) rest
+
+
+bindP : Parser a -> (a -> Parser b) -> Parser b
+bindP = flip bind
+
+
+map : (a -> b) -> Parser a -> Parser b
+map f =
+  bind (f >> return)
 
 
 return : a -> Parser a
@@ -95,7 +99,13 @@ return thing =
 
 apply : (Parser (a -> b)) -> Parser a -> Parser b
 apply fP thingP =
-  fP `andThen` thingP |> map (\(f, x) -> f x)
+  fP `bindP`
+    \f ->
+
+  thingP `bindP`
+    \x ->
+
+  return (f x)
 
 
 lift2 : (a -> b -> c) -> Parser a -> Parser b -> Parser c
@@ -138,15 +148,13 @@ many parser =
 
 many1 : Parser a -> Parser (List a)
 many1 parser =
-  Parser <| \input ->
-    parse parser input
-      `Result.andThen` \(result, rest) ->
+  parser `bindP`
+    \head ->
 
-    let
-      (result', rest') = zeroOrMore parser rest
+  many parser `bindP`
+    \tail ->
 
-    in
-      Ok (result :: result', rest')
+  return (head :: tail)
 
 
 opt : Parser a -> Parser (Maybe a)
