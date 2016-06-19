@@ -4,7 +4,7 @@ module Parser exposing
   , andThen, orElse, choice, anyOf
   , bind, map, return, apply, lift2, seq
   , many, many1, opt
-  , discardLeft, discardRight, between
+  , takeLeft, takeRight, between
   , sepBy, sepBy1
   , pchar, pstring, pint
   )
@@ -97,7 +97,7 @@ return thing =
     Ok (thing, input)
 
 
-apply : (Parser (a -> b)) -> Parser a -> Parser b
+apply : Parser (a -> b) -> Parser a -> Parser b
 apply fP thingP =
   fP `bindP`
     \f ->
@@ -170,27 +170,27 @@ opt parser =
     some `orElse` none
 
 
-discardLeft : Parser a -> Parser b -> Parser b
-discardLeft left right =
-  left `andThen` right
-    |> map (\(a, b) -> b)
-
-
-discardRight : Parser a -> Parser b -> Parser a
-discardRight left right =
+takeLeft : Parser a -> Parser b -> Parser a
+takeLeft left right =
   left `andThen` right
     |> map (\(a, b) -> a)
 
 
+takeRight : Parser a -> Parser b -> Parser b
+takeRight left right =
+  left `andThen` right
+    |> map (\(a, b) -> b)
+
+
 between : Parser a -> Parser b -> Parser c -> Parser b
 between p1 p2 p3 =
-  p1 `discardLeft` p2 `discardRight` p3
+  p1 `takeRight` p2 `takeLeft` p3
 
 
 sepBy1 : Parser a -> Parser b -> Parser (List a)
 sepBy1 parser sep =
   let
-    sepThenP = sep `discardLeft` parser
+    sepThenP = sep `takeRight` parser
 
   in
     map (\(p, list) -> p :: list) <|
